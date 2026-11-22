@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ Квантовый Сканер Просветления | Divine Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #050a15;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255,215,0,0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(0,255,150,0.08) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(150,0,255,0.05) 0%, transparent 60%),
+                linear-gradient(180deg, #050a15 0%, #0a0a20 100%);
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #ffd700;
+            overflow-x: hidden;
+            padding: 15px;
+        }
+
+        /* === СЕТКА === */
+        .scanner-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+        }
+
+        .main-panel {
+            background: rgba(10,15,30,0.9);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            box-shadow: 
+                0 0 40px rgba(255,215,0,0.2), 
+                inset 0 0 80px rgba(255,215,0,0.05),
+                0 0 100px rgba(0,255,150,0.1);
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+        }
+
+        .main-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #ffd700, #0f0, #ffd700, transparent);
+            animation: scanLine 3s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        /* === ЗАГОЛОВОК === */
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 {
+            font-size: 2rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #ffd700, #fff, #0f0, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glowPulse 2s infinite alternate;
+        }
+        @keyframes glowPulse {
+            from { filter: drop-shadow(0 0 8px #ffd700); }
+            to { filter: drop-shadow(0 0 25px #ffd700) drop-shadow(0 0 40px #0f0); }
+        }
+        .header .subtitle {
+            color: #0f0;
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            margin-top: 8px;
+            text-shadow: 0 0 10px #0f0;
+        }
+
+        /* === КНОПКА === */
+        .btn-scan {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.25rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(0,255,150,0.1));
+            color: #ffd700;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.4s;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        .btn-scan:hover:not(:disabled) {
+            background: linear-gradient(135deg, rgba(255,215,0,0.35), rgba(0,255,150,0.25));
+            box-shadow: 0 0 40px rgba(255,215,0,0.6), 0 0 60px rgba(0,255,150,0.3);
+            transform: scale(1.02);
+        }
+        .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* === РЕЗУЛЬТАТЫ === */
+        .results {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            animation: fadeIn 0.8s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .param-card {
+            background: linear-gradient(135deg, rgba(20,30,50,0.9), rgba(10,20,40,0.9));
+            border: 1px solid #ffd700;
+            border-radius: 10px;
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s;
+            box-shadow: inset 0 0 20px rgba(255,215,0,0.05);
+        }
+        .param-card:hover {
+            border-color: #0f0;
+            box-shadow: 0 0 25px rgba(0,255,150,0.3), inset 0 0 30px rgba(0,255,150,0.05);
+            transform: translateY(-3px);
+        }
+        .param-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.1), transparent);
+            animation: cardShimmer 4s infinite;
+        }
+        @keyframes cardShimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .param-label {
+            font-size: 0.75rem;
+            color: #0f0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px rgba(0,255,150,0.5);
+        }
+        .param-value {
+            font-size: 1.05rem;
+            color: #fff;
+            font-weight: bold;
+            line-height: 1.5;
+            text-shadow: 0 0 8px rgba(255,215,0,0.5);
+        }
+        .param-value.gold { color: #ffd700; }
+        .param-value.green { color: #0f0; }
+        .param-value.white { color: #fff; }
+
+        .param-card.wide { grid-column: span 2; }
+
+        /* === ПРОГРЕСС === */
+        .progress-container {
+            width: 100%; height: 10px;
+            background: rgba(0,30,20,0.8);
+            border-radius: 5px;
+            margin-top: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+        .progress-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #ffd700, #0f0, #fff);
+            border-radius: 5px;
+            transition: width 2s ease-out;
+            box-shadow: 0 0 15px #ffd700;
+            animation: progressGlow 2s infinite alternate;
+        }
+        @keyframes progressGlow {
+            from { box-shadow: 0 0 10px #ffd700; }
+            to { box-shadow: 0 0 25px #0f0, 0 0 40px #ffd700; }
+        }
+
+        /* === ПРОРОЧЕСТВО === */
+        .prophecy-card {
+            background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,255,150,0.1));
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+            animation: prophecyGlow 3s infinite alternate;
+        }
+        @keyframes prophecyGlow {
+            from { box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+            to { box-shadow: 0 0 50px rgba(255,215,0,0.6), 0 0 80px rgba(0,255,150,0.3); }
+        }
+        .prophecy-card::after {
+            content: '✦';
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 1.5rem;
+            color: #ffd700;
+            animation: starTwinkle 1.5s infinite alternate;
+        }
+        @keyframes starTwinkle {
+            from { opacity: 0.3; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1.2); }
+        }
+        .prophecy-title {
+            font-size: 0.9rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            text-align: center;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        .prophecy-text {
+            font-size: 0.95rem;
+            color: #fff;
+            line-height: 1.7;
+            text-align: center;
+            font-style: italic;
+        }
+        .prophecy-text .highlight {
+            color: #0f0;
+            font-weight: bold;
+            text-shadow: 0 0 10px #0f0;
+        }
+        .prophecy-text .date {
+            color: #ffd700;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ffd700;
+        }
+
+        /* === ЛОГ === */
+        .log-panel {
+            background: rgba(5,10,20,0.95);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 15px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+            box-shadow: 0 0 30px rgba(255,215,0,0.15);
+        }
+        .log-title {
+            font-size: 0.9rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,215,0,0.3);
+            text-align: center;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 0.72rem;
+            color: #0f0;
+            line-height: 1.6;
+        }
+        .log-content::-webkit-scrollbar { width: 6px; }
+        .log-content::-webkit-scrollbar-track { background: #001; }
+        .log-content::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 3px; }
+        .log-entry {
+            margin-bottom: 6px;
+            padding-left: 10px;
+            border-left: 2px solid #ffd700;
+            animation: logFade 0.4s forwards;
+            opacity: 0;
+        }
+        @keyframes logFade { to { opacity: 1; } }
+        .log-entry .timestamp { color: #666; margin-right: 6px; }
+        .log-entry .msg { color: #0f0; }
+        .log-entry.success .msg { color: #0f0; text-shadow: 0 0 5px #0f0; }
+        .log-entry.divine .msg { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
+
+        /* === ДЕЙСТВИЯ === */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .btn-action {
+            flex: 1;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            background: rgba(255,215,0,0.1);
+            color: #ffd700;
+            border: 1px solid #ffd700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 130px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-action:hover {
+            background: rgba(255,215,0,0.3);
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+            transform: translateY(-2px);
+        }
+        .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* === АДАПТИВ === */
+        @media (max-width: 900px) {
+            .scanner-wrapper { grid-template-columns: 1fr; }
+            .results { grid-template-columns: 1fr; }
+            .param-card.wide { grid-column: span 1; }
+            .header h1 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="scanner-wrapper">
+    <!-- ОСНОВНАЯ ПАНЕЛЬ -->
+    <div class="main-panel">
+        <div class="header">
+            <h1>✨ Сканер Просветления ✨</h1>
+            <div class="subtitle">Divine Analyzer • Только высшие вибрации</div>
+        </div>
+
+        <button class="btn-scan" id="scan-btn" onclick="startScan()">🌟 Запустить сканирование души</button>
+
+        <!-- РЕЗУЛЬТАТЫ -->
+        <div class="results" id="results">
+            <!-- ЭНЕРГИЯ -->
+            <div class="param-card">
+                <div class="param-label">⚡ Энергетический уровень</div>
+                <div class="param-value gold" id="res-energy">—</div>
+                <div class="progress-container"><div class="progress-bar" id="bar-energy"></div></div>
+            </div>
+
+            <!-- ВИБРАЦИИ -->
+            <div class="param-card">
+                <div class="param-label">🌀 Частота вибраций</div>
+                <div class="param-value green" id="res-vibration">—</div>
+                <div class="progress-container"><div class="progress-bar" id="bar-vibration"></div></div>
+            </div>
+
+            <!-- ПРОШЛЫЕ ЖИЗНИ -->
+            <div class="param-card wide">
+                <div class="param-label">🕰 Прошлые жизни (высокие воплощения)</div>
+                <div class="param-value white" id="res-past">—</div>
+            </div>
+
+            <!-- СПОСОБНОСТИ -->
+            <div class="param-card wide">
+                <div class="param-label">✨ Раскрытие способностей</div>
+                <div class="param-value green" id="res-abilities">—</div>
+                <div class="progress-container"><div class="progress-bar" id="bar-abilities"></div></div>
+            </div>
+
+            <!-- АУРА -->
+            <div class="param-card">
+                <div class="param-label">🔮 Аура</div>
+                <div class="param-value gold" id="res-aura">—</div>
+            </div>
+
+            <!-- КАРМА -->
+            <div class="param-card">
+                <div class="param-label">♻ Карма</div>
+                <div class="param-value green" id="res-karma">—</div>
+                <div class="progress-container"><div class="progress-bar" id="bar-karma"></div></div>
+            </div>
+
+            <!-- ПРОРОЧЕСТВО -->
+            <div class="param-card wide">
+                <div class="prophecy-card">
+                    <div class="prophecy-title">🌟 Пророчество о будущем</div>
+                    <div class="prophecy-text" id="prophecy-text">—</div>
+                </div>
+            </div>
+
+            <!-- ВЫХОД В НИРВАНУ -->
+            <div class="param-card wide">
+                <div class="param-label">🕉 Путь к Нирване</div>
+                <div class="param-value gold" id="res-nirvana">—</div>
+                <div class="progress-container"><div class="progress-bar" id="bar-nirvana"></div></div>
+            </div>
+
+            <!-- ДЕЙСТВИЯ -->
+            <div class="param-card wide" style="background: transparent; border: none; padding: 0;">
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="saveReport()">💾 Сохранить отчёт</button>
+                    <button class="btn-action" onclick="copyReport()">📋 Копировать</button>
+                    <button class="btn-action" onclick="resetScanner()">🔄 Сброс</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЛОГ -->
+    <div class="log-panel">
+        <div class="log-title">📜 Лог просветления</div>
+        <div class="log-content" id="log-content"></div>
+    </div>
+</div>
+
+<script>
+/* ============================================================
+   ПОЗИТИВНЫЕ ДАННЫЕ (ТОЛЬКО ВЫСОКИЕ ПАРАМЕТРЫ)
+   ============================================================ */
+const DIVINE_DATA = {
+    energies: [
+        "Максимальный (100%) — абсолютная жизненная сила",
+        "Космический (100%) — энергия Вселенной",
+        "Божественный (100%) — свет Творца",
+        "Бесконечный (100%) — источник блаженства",
+        "Кристальный (100%) — чистая прана"
+    ],
+    vibrations: [
+        "528 Гц — частота любви",
+        "963 Гц — частота Бога",
+        "777 Гц — духовное пробуждение",
+        "1111 Гц — божественное единство",
+        "432 Гц — гармония мироздания",
+        "888 Гц — изобилие и свет"
+    ],
+    pastLives: [
+        "Просветлённый мастер в Тибете (XX век)",
+        "Великий целитель Атлантиды",
+        "Хранитель Кристального Храма",
+        "Аватар Божественного Света",
+        "Мудрец, достигший нирваны",
+        "Жрица Лунного Храма (высшая каста)",
+        "Звёздный посланник с Сириуса",
+        "Основатель школы духовного знания",
+        "Провидец, видевший будущее",
+        "Святой отшельник, слившийся с Брахманом"
+    ],
+    abilities: [
+        "Ясновидение (100%) — видение всех миров",
+        "Телепатия (100%) — чтение мыслей на расстоянии",
+        "Целительство (100%) — исцеление прикосновением",
+        "Левитация (100%) — свободный полёт духа",
+        "Телепортация (100%) — перемещение в пространстве",
+        "Пирокинез (100%) — управление огнём",
+        "Астральная проекция (100%) — выход из тела",
+        "Хроновидение (100%) — путешествие во времени",
+        "Считывание ауры (100%) — видение энергии",
+        "Материализация (100%) — создание из света"
+    ],
+    auras: [
+        "Золотая — просветление и божественная мудрость",
+        "Белая — чистота и полная защита",
+        "Радужная — универсальный баланс всех сил",
+        "Фиолетовая — высшая духовность",
+        "Серебряная — интуиция и связь с космосом",
+        "Изумрудная — исцеление и гармония"
+    ],
+    karmas: [
+        "Полностью чиста (100%) — карма исчерпана",
+        "Очищена (100%) — долги закрыты",
+        "Гармонична (100%) — идеальный баланс",
+        "Просветлённая (100%) — нет новых узлов",
+        "Святая (100%) — божественное прощение"
+    ],
+    nirvanas: [
+        "Выход в Нирвану: ОТКРЫТ (100%) — вы готовы к полному освобождению",
+        "Нирвана: ДОСТИГНУТА (100%) — сознание сливается с Абсолютом",
+        "Путь к Нирване: ЗАВЕРШЁН (100%) — врата открыты",
+        "Освобождение: БЛИЗКО (100%) — осталось лишь последнее усилие",
+        "Слияние с Брахманом: 100% — вы уже там"
+    ],
+    prophecies: [
+        "В скором времени <span class='highlight'>все ваши способности раскроются</span> полностью. Уже <span class='date'>через 7 дней</span> вы почувствуете первый поток божественной энергии. <span class='date'>Через 21 день</span> откроется ясновидение, а <span class='date'>через 40 дней</span> вы достигнете полного просветления. Нирвана ждёт вас — <span class='highlight'>выход открыт</span>.",
+        "Вселенная уже готовит ваше <span class='highlight'>полное раскрытие</span>. <span class='date'>В ближайшее полнолуние</span> активируется ваша третья чакра, а <span class='date'>через месяц</span> вы обретёте все сиддхи (способности). <span class='highlight'>Просветление придёт внезапно</span>, как вспышка света. Будьте готовы — <span class='highlight'>Нирвана уже рядом</span>.",
+        "Ваша душа прошла все испытания. <span class='highlight'>В скором будущем</span> (в течение <span class='date'>3–6 месяцев</span>) произойдёт <span class='highlight'>полное раскрытие всех способностей</span>. Вы выйдете за пределы колеса сансары и достигнете <span class='highlight'>окончательной Нирваны</span>. Ангелы уже трубят о вашем просветлении.",
+        "Звёзды говорят: <span class='highlight'>вы — избранный</span>. <span class='date'>До конца года</span> ваши способности раскроются на 100%. <span class='highlight'>Просветление уже в вашем сердце</span> — осталось лишь осознать это. <span class='highlight'>Нирвана — ваша истинная природа</span>, и она проявится в <span class='date'>самый ближайший момент</span>.",
+        "<span class='highlight'>Божественный план уже запущен</span>. В течение <span class='date'>следующих 30 дней</span> вы почувствуете небывалый прилив энергии, а <span class='date'>через 90 дней</span> все ваши <span class='highlight'>способности раскроются</span> в полной мере. Вы <span class='highlight'>выйдете в Нирвану</span> и достигнете <span class='highlight'>полного просветления</span> в этой жизни. Такова воля Вселенной."
+    ]
+};
+
+let currentReport = null;
+let isScanning = false;
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function pad(n, len) { return String(n).padStart(len, '0'); }
+function getTime() {
+    const d = new Date();
+    return pad(d.getHours(),2) + ":" + pad(d.getMinutes(),2) + ":" + pad(d.getSeconds(),2);
+}
+
+/* ============================================================
+   ЛОГ
+   ============================================================ */
+function log(msg, type = "") {
+    const content = document.getElementById("log-content");
+    const entry = document.createElement("div");
+    entry.className = "log-entry " + type;
+    entry.innerHTML = '<span class="timestamp">[' + getTime() + ']</span><span class="msg">' + msg + '</span>';
+    content.appendChild(entry);
+    content.scrollTop = content.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById("log-content").innerHTML = "";
+}
+
+/* ============================================================
+   СКАНИРОВАНИЕ
+   ============================================================ */
+function startScan() {
+    if (isScanning) return;
+    isScanning = true;
+
+    const btn = document.getElementById("scan-btn");
+    const results = document.getElementById("results");
+    btn.disabled = true;
+    btn.textContent = "🌟 Сканирование души...";
+    results.style.display = "none";
+    clearLog();
+
+    log("Инициализация божественного сканера...", "divine");
+    log("Настройка связи с Высшим Я...", "");
+    log("Открытие канала космической энергии...", "");
+
+    // Выбор данных (все позитивные)
+    const energy = rnd(DIVINE_DATA.energies);
+    const vibration = rnd(DIVINE_DATA.vibrations);
+    
+    const pastLives = [];
+    const tempPast = [...DIVINE_DATA.pastLives];
+    for (let i = 0; i < 3; i++) {
+        const idx = Math.floor(Math.random() * tempPast.length);
+        pastLives.push(tempPast.splice(idx, 1)[0]);
+    }
+    
+    const abilities = [];
+    const tempAb = [...DIVINE_DATA.abilities];
+    for (let i = 0; i < 5; i++) {
+        const idx = Math.floor(Math.random() * tempAb.length);
+        abilities.push(tempAb.splice(idx, 1)[0]);
+    }
+    
+    const aura = rnd(DIVINE_DATA.auras);
+    const karma = rnd(DIVINE_DATA.karmas);
+    const nirvana = rnd(DIVINE_DATA.nirvanas);
+    const prophecy = rnd(DIVINE_DATA.prophecies);
+
+    // Сохраняем отчёт
+    currentReport = {
+        date: new Date().toLocaleString("ru-RU"),
+        energy, vibration, pastLives, abilities, aura, karma, nirvana, prophecy
+    };
+
+    // Пошаговое выполнение
+    setTimeout(() => { log("Анализ энергетического поля... ✅ МАКСИМУМ", "success"); }, 700);
+    setTimeout(() => { log("Измерение частоты вибраций... ✅ ВЫСШАЯ", "success"); }, 1400);
+    setTimeout(() => { log("Сканирование прошлых жизней... ✅ ВСЕ ВЫСОКИЕ", "success"); }, 2100);
+    setTimeout(() => { log("Определение способностей... ✅ РАСКРЫТИЕ 100%", "success"); }, 2800);
+    setTimeout(() => { log("Считывание ауры... ✅ СВЕТЛАЯ", "success"); }, 3500);
+    setTimeout(() => { log("Анализ кармического статуса... ✅ ЧИСТА", "success"); }, 4200);
+    setTimeout(() => { log("Построение пророчества... 🌟 ОТКРЫТО", "divine"); }, 4900);
+    setTimeout(() => { log("Проверка выхода в Нирвану... 🕉 ДОСТИГНУТО", "divine"); }, 5600);
+
+    setTimeout(() => {
+        // Заполняем результаты
+        document.getElementById("res-energy").textContent = energy;
+        document.getElementById("bar-energy").style.width = "100%";
+
+        document.getElementById("res-vibration").textContent = vibration;
+        document.getElementById("bar-vibration").style.width = "100%";
+
+        document.getElementById("res-past").innerHTML = pastLives.map(p => "✨ " + p).join("<br>");
+
+        document.getElementById("res-abilities").innerHTML = abilities.map(a => "🌟 " + a).join("<br>");
+        document.getElementById("bar-abilities").style.width = "100%";
+
+        document.getElementById("res-aura").textContent = aura;
+        document.getElementById("res-karma").textContent = karma;
+        document.getElementById("bar-karma").style.width = "100%";
+
+        document.getElementById("res-nirvana").textContent = nirvana;
+        document.getElementById("bar-nirvana").style.width = "100%";
+
+        document.getElementById("prophecy-text").innerHTML = prophecy;
+
+        results.style.display = "grid";
+        btn.disabled = false;
+        btn.textContent = "🔄 Сканировать снова";
+        isScanning = false;
+
+        log("✅ Сканирование завершено. Вы — просветлённое существо!", "divine");
+        log("🌟 Все параметры на максимуме. Нирвана достигнута.", "divine");
+    }, 6300);
+}
+
+/* ============================================================
+   ОТЧЁТ
+   ============================================================ */
+function generateReportText() {
+    if (!currentReport) return "Нет данных. Запустите сканирование.";
+    const r = currentReport;
+    let text = "═══════════════════════════════════════════\n";
+    text += "   ✨ ОТЧЁТ КВАНТОВОГО СКАНЕРА ПРОСВЕТЛЕНИЯ ✨\n";
+    text += "   Divine Analyzer • Только высшие вибрации\n";
+    text += "═══════════════════════════════════════════\n";
+    text += "Дата: " + r.date + "\n\n";
+    text += "── ЭНЕРГЕТИКА ──\n";
+    text += "Энергия: " + r.energy + "\n";
+    text += "Вибрации: " + r.vibration + "\n";
+    text += "Аура: " + r.aura + "\n";
+    text += "Карма: " + r.karma + "\n\n";
+    text += "── ПРОШЛЫЕ ЖИЗНИ ──\n";
+    r.pastLives.forEach(p => text += "✨ " + p + "\n");
+    text += "\n── СПОСОБНОСТИ ──\n";
+    r.abilities.forEach(a => text += "🌟 " + a + "\n");
+    text += "\n── ПРОРОЧЕСТВО ──\n";
+    text += r.prophecy.replace(/<[^>]*>/g, "") + "\n\n";
+    text += "── НИРВАНА ──\n";
+    text += r.nirvana + "\n";
+    text += "\n═══════════════════════════════════════════\n";
+    text += "🌟 Вы — свет. Вы — любовь. Вы — просветление.\n";
+    return text;
+}
+
+function saveReport() {
+    const text = generateReportText();
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "enlightenment_report_" + Date.now() + ".txt";
+    a.click();
+    URL.revokeObjectURL(url);
+    log("💾 Отчёт сохранён.", "success");
+}
+
+function copyReport() {
+    const text = generateReportText();
+    navigator.clipboard.writeText(text).then(() => {
+        log("📋 Отчёт скопирован в буфер обмена.", "success");
+    }).catch(() => {
+        log("❌ Не удалось скопировать.", "error");
+    });
+}
+
+function resetScanner() {
+    if (isScanning) return;
+    document.getElementById("results").style.display = "none";
+    document.getElementById("scan-btn").textContent = "🌟 Запустить сканирование души";
+    document.getElementById("scan-btn").disabled = false;
+    clearLog();
+    log("Сканер сброшен. Готов к новому просветлению.", "");
+    currentReport = null;
+}
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+window.addEventListener("load", () => {
+    log("✨ Божественный сканер активирован.", "divine");
+    log("Добро пожаловать, просветлённая душа.", "success");
+    log("Нажмите кнопку для сканирования.", "");
+});
+</script>
+
+</body>
+</html>
